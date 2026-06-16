@@ -1,20 +1,29 @@
-name: Demo Workflow
+name: Python CI
 
 on:
   push:
     branches:
       - main
 
+  pull_request:
+    branches:
+      - main
+
 jobs:
-  hello-job:
+  test:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Print Message
-        run: echo "Hello from GitHub Actions!"
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-      - name: Show Files
-        run: ls -la
+      - name: Install Pytest
+        run: pip install pytest
+
+      - name: Run Tests
+        run: pytest
