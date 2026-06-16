@@ -1,4 +1,4 @@
-name: Go CI/CD
+name: Go Backend CI/CD
 
 on:
   push:
@@ -6,32 +6,95 @@ on:
       - main
 
 jobs:
-  build-test-push:
+
+# -------------------------
+# 1. BUILD + TEST
+# -------------------------
+  build_test:
 
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.26'
+          go-version: "1.26"
 
       - name: Run Tests
         run: go test -v ./...
 
-      - name: Build Docker Image
-        run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/github-actions-demo:latest .
+      - name: Build Application
+        run: go build -v ./...
 
-      - name: Login to Docker Hub
+# -------------------------
+# 2. BUILD + PUSH IMAGE
+# -------------------------
+  docker_build_push:
+
+    runs-on: ubuntu-latest
+    needs: build_test
+
+    outputs:
+      image_tag: ${{ steps.tag.outputs.image_tag }}
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - name: Generate Tag
+        id: tag
         run: |
-          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login \
+          IMAGE_TAG=$(date +%Y%m%d)-${GITHUB_SHA::7}
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Login Docker Hub
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | \
+          docker login \
           -u "${{ secrets.DOCKER_USERNAME }}" \
           --password-stdin
 
-      - name: Push Docker Image
+      - name: Build Image
         run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/github-actions-demo:latest
+          docker build \
+          -t swanand2022/github-actions-demo:${{ steps.tag.outputs.image_tag }} .
+
+      - name: Push Image
+        run: |
+          docker push \
+          swanand2022/github-actions-demo:${{ steps.tag.outputs.image_tag }}
+
+# -------------------------
+# 3. SECURITY SCAN
+# -------------------------
+  security_scan:
+
+    runs-on: ubuntu-latest
+    needs: docker_build_push
+
+    steps:
+
+      - name: Install Trivy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
+
+          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.65.0_Linux-64bit.deb
+
+          sudo dpkg -i trivy_0.65.0_Linux-64bit.deb
+
+      - name: Login Docker Hub
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | \
+          docker login \
+          -u "${{ secrets.DOCKER_USERNAME }}" \
+          --password-stdin
+
+      - name: Scan Docker Image
+        run: |
+          trivy image \
+          swanand2022/github-actions-demo:${{ needs.docker_build_push.outputs.image_tag }}
