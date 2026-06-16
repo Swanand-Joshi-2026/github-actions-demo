@@ -21,8 +21,7 @@ func TestHealthHandler(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 
-	// Intentionally broken assertion
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("expected status 500 but got %d", w.Code)
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status 200 but got %d", w.Code)
 	}
 }
