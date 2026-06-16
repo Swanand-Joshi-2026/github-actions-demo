@@ -78,14 +78,11 @@ jobs:
 
     steps:
 
-      - name: Install Trivy
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget
-
-          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.65.0_Linux-64bit.deb
-
-          sudo dpkg -i trivy_0.65.0_Linux-64bit.deb
+      - name: Run Trivy Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: swanand2022/github-actions-demo:${{ needs.docker_build_push.outputs.image_tag }}
+          format: table
 
       - name: Login Docker Hub
         run: |
