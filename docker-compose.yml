@@ -1,6 +1,6 @@
 services:
   app:
-    image: swanand2022/github-actions-demo:latest
+    image: swanand2022/github-actions-demo:${IMAGE_TAG}
     container_name: github-actions-demo
 
     ports:

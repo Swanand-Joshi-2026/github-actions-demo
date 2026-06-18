@@ -1,0 +1,22 @@
+name: Rollback Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Docker image tag to rollback to"
+        required: true
+        type: string
+
+jobs:
+
+  rollback:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Rollback Information
+        run: |
+          echo "Rolling back to image:"
+          echo "swanand2022/github-actions-demo:${{ github.event.inputs.image_tag }}"
